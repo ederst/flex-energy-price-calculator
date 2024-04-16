@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "flex-energy-price-calculator"
+version = "0.1.0"
+description = ""
+authors = ["ederst"]
+license = "LICENSE"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+typer = "^0.12.3"
+requests = "^2.31.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1.1"
+flake8 = "^7.0.0"
+black = "^24.4.0"
+rope = "^1.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+skip-string-normalization = true
+line-length = 120
+target-version = ['py312']
+extend-exclude = '''
+(
+  /\..+    # exclude dot files and directories
+)
+'''
+
+[tool.poetry.scripts]
+flep = "flex_energy_price_calculator.command:main"
