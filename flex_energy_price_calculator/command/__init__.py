@@ -2,6 +2,7 @@ import sys
 from datetime import date
 
 from flex_energy_price_calculator.models.base import DEFAULT_CACHE_DIR
+from flex_energy_price_calculator.models.oekostrom.oekoflow import OekoFlow10
 
 
 def main():
@@ -15,8 +16,11 @@ def main():
 
     DEFAULT_CACHE_DIR.mkdir(exist_ok=True)
 
-    print(f"Unknown model: {model}")
-    exit(1)
+    if model == "oekoflow1.0":
+        model = OekoFlow10(display_date)
+    else:
+        print(f"Unknown model: {model}")
+        exit(1)
 
     print("stock prices:", model.prices)
     print(f"avg stock price:     {model.average_price:5.2f}€/MWh")
