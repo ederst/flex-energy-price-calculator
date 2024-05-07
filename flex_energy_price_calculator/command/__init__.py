@@ -2,6 +2,10 @@ import sys
 from datetime import date
 
 from flex_energy_price_calculator.models.base import DEFAULT_CACHE_DIR
+from flex_energy_price_calculator.models.gogreenenergy.gogreenenergyflex import (
+    GoGreenEnergyFlex,
+    GoGreenEnergyFlexFuture,
+)
 from flex_energy_price_calculator.models.oekostrom.oekoflow import OekoFlow10
 
 
@@ -18,6 +22,10 @@ def main():
 
     if model == "oekoflow1.0":
         model = OekoFlow10(display_date)
+    elif model in ["gogreenenergyflex", "gogreenenergyflexplus"]:
+        model = GoGreenEnergyFlex(display_date)
+    elif model in ["gogreenenergyflexfuture", "gogreenenergyflexfutureplus"]:
+        model = GoGreenEnergyFlexFuture(display_date)
     else:
         print(f"Unknown model: {model}")
         exit(1)
