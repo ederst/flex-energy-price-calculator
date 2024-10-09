@@ -33,12 +33,18 @@ def main():
         print(f"Unknown model: {model}")
         exit(1)
 
-    print("stock prices:", model.prices)
-    print(f"avg stock price:     {model.average_price:5.2f}€/MWh")
-    print("---")
-    print(f"msg: {model.status_message}")
-    print(f"net enduser price:   {model.net_price:5.2f}ct/KWh")
-    print(f"gross enduser price: {model.gross_price:5.2f}ct/KWh")
+    prices_string = "".join([f"\n  - {x[0]}: {x[1]}" for x in model.prices])
+
+    print(
+        (
+            f"stock prices: {prices_string}\n"
+            f"avg stock price: {model.average_price:5.2f}€/MWh\n"
+            "---\n"
+            f"msg: {model.status_message}\n"
+            f"net enduser price:   {model.net_price:5.2f}ct/KWh\n"
+            f"gross enduser price: {model.gross_price:5.2f}ct/KWh\n"
+        )
+    )
 
 
 if __name__ == "__main__":
