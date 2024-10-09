@@ -38,16 +38,17 @@ class OekoFlow10:
                 print(f"No data for {on_date}, skipping")
                 continue
 
-            prices.append(close_price)
+            prices.append((on_date, close_price))
 
         self.prices = prices
+        price_values = [x[1] for x in self.prices]
 
-        len_prices = len(self.prices)
+        len_prices = len(price_values)
         if len_prices == DAYS:
             self.status_message = f"Estimation based on all data ({len_prices}/{DAYS})"
         else:
             self.status_message = f"Estimation based on missing data ({len_prices}/{DAYS})"
 
-        self.average_price = mean(self.prices)
+        self.average_price = mean(price_values)
         self.net_price = (self.average_price * STD_PROFILE_FACTOR + FEES) / CONVERSION_FACTOR
         self.gross_price = self.net_price * TAXES
