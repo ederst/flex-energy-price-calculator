@@ -6,6 +6,7 @@ from flex_energy_price_calculator.models.gogreenenergy.gogreenenergyflex import 
     GoGreenEnergyFlex,
     GoGreenEnergyFlexFuture,
 )
+from flex_energy_price_calculator.models.noprovider.lastmonthavg import LastMonthAvg
 from flex_energy_price_calculator.models.oekostrom.oekoflow import OekoFlow10
 
 
@@ -26,6 +27,8 @@ def main():
         model = GoGreenEnergyFlex(display_date)
     elif model in ["gogreenenergyflexfuture", "gogreenenergyflexfutureplus"]:
         model = GoGreenEnergyFlexFuture(display_date)
+    elif model in ["lmavg"]:
+        model = LastMonthAvg(display_date)
     else:
         print(f"Unknown model: {model}")
         exit(1)
