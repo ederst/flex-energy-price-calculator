@@ -33,3 +33,4 @@ Currently the following models are supported:
 * oekoflow1.0
 * gogreenenergyflex
 * gogreenenergyflexfuture
+* fullmonth

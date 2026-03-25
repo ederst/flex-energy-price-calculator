@@ -7,6 +7,7 @@ from flex_energy_price_calculator.models.gogreenenergy.gogreenenergyflex import 
     GoGreenEnergyFlexFuture,
 )
 from flex_energy_price_calculator.models.noprovider.lastmonthavg import LastMonthAvg
+from flex_energy_price_calculator.models.fullmonth.fullmonth import FullMonth
 from flex_energy_price_calculator.models.oekostrom.oekoflow import OekoFlow10
 from dateutil.relativedelta import relativedelta
 
@@ -42,6 +43,8 @@ def main():
             model = GoGreenEnergyFlexFuture(current_date)
         elif model_arg in ["lmavg"]:
             model = LastMonthAvg(current_date)
+        elif model_arg == "fullmonth":
+            model = FullMonth(current_date)
         else:
             print(f"Unknown model: {model_arg}")
             exit(1)
