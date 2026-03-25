@@ -34,4 +34,4 @@ extend-exclude = '''
 '''
 
 [tool.poetry.scripts]
-flep = "flex_energy_price_calculator.command:main"
+flep = "flex_energy_price_calculator.command:app"
