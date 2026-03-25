@@ -104,13 +104,15 @@ def main(
     net_price = sum(display_model['net_prices']) / len(display_model['net_prices'])
     gross_price = sum(display_model['gross_prices']) / len(display_model['gross_prices'])
 
-    console.print(Panel.fit(
-        f"[bold cyan]Model:[/bold cyan] {meta.name}\n"
-        f"[bold cyan]Description:[/bold cyan] {meta.description}\n"
-        f"[bold cyan]Fees:[/bold cyan] {meta.fees} €/month",
-        title="[bold]Tariff Info[/bold]",
-        border_style="cyan",
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold cyan]Model:[/bold cyan] {meta.name}\n"
+            f"[bold cyan]Description:[/bold cyan] {meta.description}\n"
+            f"[bold cyan]Fees:[/bold cyan] {meta.fees} €/month",
+            title="[bold]Tariff Info[/bold]",
+            border_style="cyan",
+        )
+    )
 
     price_table = Table(title="\n[bold]Stock Prices[/bold]", show_header=True, header_style="bold magenta")
     price_table.add_column("Date", style="white", justify="left")
@@ -126,11 +128,13 @@ def main(
         all_skipped.extend(m.skipped_days)
     if all_skipped:
         skipped_str = "\n".join(str(d) for d in sorted(all_skipped))
-        console.print(Panel.fit(
-            f"[yellow]{skipped_str}[/yellow]",
-            title="[bold yellow]⚠ Skipped Days (no data)[/bold yellow]",
-            border_style="yellow",
-        ))
+        console.print(
+            Panel.fit(
+                f"[yellow]{skipped_str}[/yellow]",
+                title="[bold yellow]⚠ Skipped Days (no data)[/bold yellow]",
+                border_style="yellow",
+            )
+        )
 
     results_table = Table(show_header=False, box=None, padding=(0, 2))
     results_table.add_column("Label", style="white")
@@ -140,11 +144,13 @@ def main(
     results_table.add_row("[bold]Net Enduser Price[/bold]", f"{net_price:.2f} ct/kWh")
     results_table.add_row("[bold]Gross Enduser Price[/bold]", f"{gross_price:.2f} ct/kWh")
 
-    console.print(Panel.fit(
-        results_table,
-        title="[bold]Results[/bold]",
-        border_style="green",
-    ))
+    console.print(
+        Panel.fit(
+            results_table,
+            title="[bold]Results[/bold]",
+            border_style="green",
+        )
+    )
     console.print()
 
 

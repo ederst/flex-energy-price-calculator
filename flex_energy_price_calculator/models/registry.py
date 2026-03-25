@@ -41,6 +41,7 @@ def register(
         _MODELS[name] = (cls, metadata)
         cls.__registry_metadata__ = metadata
         return cls
+
     return decorator
 
 

@@ -35,47 +35,53 @@ def generate_monthly_report(
             continue
         meta = get_metadata(model_name)
         model_calcs.append((model_name, calc, meta))
-        report_lines.append(
-            f"| [{model_name}](#{model_name}) | {calc.net_price:.2f} | {calc.gross_price:.2f} |"
-        )
+        report_lines.append(f"| [{model_name}](#{model_name}) | {calc.net_price:.2f} | {calc.gross_price:.2f} |")
 
     if not model_calcs:
         report_lines.append("| _No data available_ | - | - |")
 
     if include_details:
-        report_lines.extend([
-            "",
-            "## Details",
-            "",
-        ])
+        report_lines.extend(
+            [
+                "",
+                "## Details",
+                "",
+            ]
+        )
 
         for model_name, calc, meta in model_calcs:
-            report_lines.extend([
-                f"### {model_name}",
-                "",
-                f"**Description:** {meta.description}",
-                f"**Fees:** {meta.fees} €/month",
-                f"**Prices used:** {len(calc.prices)} days",
-                f"**Skipped days:** {len(calc.skipped_days)}",
-                "",
-                "| Date | Price (€/MWh) |",
-                "|-------|----------------|",
-            ])
+            report_lines.extend(
+                [
+                    f"### {model_name}",
+                    "",
+                    f"**Description:** {meta.description}",
+                    f"**Fees:** {meta.fees} €/month",
+                    f"**Prices used:** {len(calc.prices)} days",
+                    f"**Skipped days:** {len(calc.skipped_days)}",
+                    "",
+                    "| Date | Price (€/MWh) |",
+                    "|-------|----------------|",
+                ]
+            )
 
             for price_date, price_value in calc.prices:
                 report_lines.append(f"| {price_date} | {price_value:.2f} |")
 
             if calc.skipped_days:
-                report_lines.extend([
-                    "",
-                    f"**Skipped:** {', '.join(str(d) for d in sorted(calc.skipped_days))}",
-                ])
+                report_lines.extend(
+                    [
+                        "",
+                        f"**Skipped:** {', '.join(str(d) for d in sorted(calc.skipped_days))}",
+                    ]
+                )
 
-            report_lines.extend([
-                "",
-                f"**Avg stock price:** {calc.average_price:.2f} €/MWh",
-                "",
-            ])
+            report_lines.extend(
+                [
+                    "",
+                    f"**Avg stock price:** {calc.average_price:.2f} €/MWh",
+                    "",
+                ]
+            )
 
     year_str = target_month.strftime("%Y")
     month_file = target_month.strftime("%m")
