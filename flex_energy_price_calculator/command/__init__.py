@@ -1,15 +1,14 @@
 import sys
 from datetime import date
+from dateutil.relativedelta import relativedelta
 
 from flex_energy_price_calculator.models.base import DEFAULT_CACHE_DIR
-from flex_energy_price_calculator.models.gogreenenergy.gogreenenergyflex import (
-    GoGreenEnergyFlex,
-    GoGreenEnergyFlexFuture,
-)
-from flex_energy_price_calculator.models.noprovider.lastmonthavg import LastMonthAvg
-from flex_energy_price_calculator.models.fullmonth.fullmonth import FullMonth
-from flex_energy_price_calculator.models.oekostrom.oekoflow import OekoFlow10
-from dateutil.relativedelta import relativedelta
+from flex_energy_price_calculator.models.registry import get_model, get_metadata, list_models
+
+import flex_energy_price_calculator.models.oekostrom  # noqa: F401
+import flex_energy_price_calculator.models.gogreenenergy  # noqa: F401
+import flex_energy_price_calculator.models.noprovider  # noqa: F401
+import flex_energy_price_calculator.models.fullmonth  # noqa: F401
 
 
 def main():
@@ -20,9 +19,23 @@ def main():
     end_month = sys.argv[2]
     model_arg = sys.argv[3]
 
+    if model_arg == "--list":
+        print("Available models:")
+        for name in list_models():
+            meta = get_metadata(name)
+            if meta:
+                print(f"  {meta.name}: {meta.description} (fees: {meta.fees} €/month)")
+        exit(0)
+
     print(f"Calculating prices for {start_month} to {end_month}\n---")
 
     DEFAULT_CACHE_DIR.mkdir(exist_ok=True)
+
+    model_cls = get_model(model_arg)
+    if not model_cls:
+        available = ", ".join(list_models())
+        print(f"Unknown model: {model_arg}\nAvailable models: {available}")
+        exit(1)
 
     start_date = date.fromisoformat(f"{start_month}-01")
     end_date = date.fromisoformat(f"{end_month}-01")
@@ -35,19 +48,7 @@ def main():
         'gross_prices': [],
     }
     while current_date <= end_date:
-        if model_arg == "oekoflow1.0":
-            model = OekoFlow10(current_date)
-        elif model_arg in ["gogreenenergyflex", "gogreenenergyflexplus"]:
-            model = GoGreenEnergyFlex(current_date)
-        elif model_arg in ["gogreenenergyflexfuture", "gogreenenergyflexfutureplus"]:
-            model = GoGreenEnergyFlexFuture(current_date)
-        elif model_arg in ["lmavg"]:
-            model = LastMonthAvg(current_date)
-        elif model_arg == "fullmonth":
-            model = FullMonth(current_date)
-        else:
-            print(f"Unknown model: {model_arg}")
-            exit(1)
+        model = model_cls(current_date)
 
         display_model['prices'].extend(model.prices)
         display_model['average_prices'].append(model.average_price)
@@ -55,7 +56,6 @@ def main():
         display_model['net_prices'].append(model.net_price),
         display_model['gross_prices'].append(model.gross_price),
         current_date = current_date + relativedelta(months=1)
-
 
     average_price = sum(display_model['average_prices']) / len(display_model['average_prices'])
     net_price = sum(display_model['net_prices']) / len(display_model['net_prices'])
@@ -73,8 +73,6 @@ def main():
             f"gross enduser price: {gross_price:5.2f}ct/KWh\n"
         )
     )
-
-
 
 
 if __name__ == "__main__":

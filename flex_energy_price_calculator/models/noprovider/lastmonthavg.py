@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from statistics import mean
 
 from ..base import CONVERSION_FACTOR, STD_PROFILE_FACTOR, TAXES, get_eex_close_price
+from ..registry import register
 
 # DAYS = 10
 FEES = 9.26
@@ -9,6 +10,12 @@ FEES = 9.26
 OPTION_ROOT = "E.ATBM"  # EX Phelix AT Future Monthly Base
 
 
+@register(
+    "lmavg",
+    description="Last Month Average tariff",
+    fees=9.26,
+    date_range_type="last_month",
+)
 class LastMonthAvg:
 
     def __init__(self, display_date: date) -> None:

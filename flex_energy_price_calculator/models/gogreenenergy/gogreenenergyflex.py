@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from statistics import mean
 
 from ..base import CONVERSION_FACTOR, STD_PROFILE_FACTOR, TAXES, get_eex_close_price
+from ..registry import register
 
 START_DAY = 21
 END_DAY = 20
@@ -11,6 +12,14 @@ FUTURE_FEES = 14.75
 OPTION_ROOT = "E.ATBM"  # EX Phelix AT Future Monthly Base
 
 
+@register(
+    "gogreenenergyflex",
+    description="GoGreen Energy Flex tariff",
+    fees=9.75,
+    date_range_type="custom_range",
+    start_day=21,
+    end_day=20,
+)
 class GoGreenEnergyFlex:
 
     def __init__(self, display_date: date, fees: float = FEES) -> None:
@@ -50,6 +59,14 @@ class GoGreenEnergyFlex:
         self.gross_price = self.net_price * TAXES
 
 
+@register(
+    "gogreenenergyflexfuture",
+    description="GoGreen Energy Flex Future tariff",
+    fees=14.75,
+    date_range_type="custom_range",
+    start_day=21,
+    end_day=20,
+)
 class GoGreenEnergyFlexFuture(GoGreenEnergyFlex):
 
     def __init__(self, display_date: date) -> None:

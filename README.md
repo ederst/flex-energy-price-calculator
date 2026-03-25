@@ -25,7 +25,8 @@ poetry install
 Create `.envrc-secrets` and find out which headers you have to set for yourselves.
 
 ```shell
-poetry run flep <YYYY-MM> <model>
+poetry run flep <YYYY-MM> <YYYY-MM> <model>
+poetry run flep --list
 ```
 
 Currently the following models are supported:

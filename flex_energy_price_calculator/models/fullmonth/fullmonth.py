@@ -2,10 +2,17 @@ from datetime import date, timedelta
 from statistics import mean
 
 from ..base import CONVERSION_FACTOR, STD_PROFILE_FACTOR, TAXES, get_eex_close_price
+from ..registry import register
 
 OPTION_ROOT = "E.ATBM"
 
 
+@register(
+    "fullmonth",
+    description="Full Month tariff (no fees)",
+    fees=0.0,
+    date_range_type="full_month",
+)
 class FullMonth:
     def __init__(self, display_date: date) -> None:
         end_date = min(display_date - timedelta(days=1), date.today() - timedelta(days=1))

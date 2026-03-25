@@ -2,13 +2,19 @@ from datetime import date, timedelta
 from statistics import mean
 
 from ..base import CONVERSION_FACTOR, STD_PROFILE_FACTOR, TAXES, get_eex_close_price
+from ..registry import register
 
 DAYS = 10
 FEES = 9.26
-
 OPTION_ROOT = "E.ATBM"  # EX Phelix AT Future Monthly Base
 
 
+@register(
+    "oekoflow1.0",
+    description="OekoFlow 1.0 tariff",
+    fees=9.26,
+    date_range_type="full_month",
+)
 class OekoFlow10:
 
     def __init__(self, display_date: date) -> None:
