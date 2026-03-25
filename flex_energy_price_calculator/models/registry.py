@@ -8,6 +8,8 @@ class ModelMetadata:
     description: str
     fees: float
     date_range_type: str
+    option_root: str
+    days: int | None = None
     start_day: int | None = None
     end_day: int | None = None
 
@@ -20,21 +22,24 @@ def register(
     description: str = "",
     fees: float = 0.0,
     date_range_type: str = "full_month",
+    option_root: str = "E.ATBM",
+    days: int | None = None,
     start_day: int | None = None,
     end_day: int | None = None,
 ):
     def decorator(cls):
-        _MODELS[name] = (
-            cls,
-            ModelMetadata(
-                name=name,
-                description=description,
-                fees=fees,
-                date_range_type=date_range_type,
-                start_day=start_day,
-                end_day=end_day,
-            ),
+        metadata = ModelMetadata(
+            name=name,
+            description=description,
+            fees=fees,
+            date_range_type=date_range_type,
+            option_root=option_root,
+            days=days,
+            start_day=start_day,
+            end_day=end_day,
         )
+        _MODELS[name] = (cls, metadata)
+        cls.__registry_metadata__ = metadata
         return cls
     return decorator
 

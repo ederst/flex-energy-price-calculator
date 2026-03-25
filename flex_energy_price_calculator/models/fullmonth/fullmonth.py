@@ -4,17 +4,19 @@ from statistics import mean
 from ..base import CONVERSION_FACTOR, STD_PROFILE_FACTOR, TAXES, get_eex_close_price
 from ..registry import register
 
-OPTION_ROOT = "E.ATBM"
-
 
 @register(
     "fullmonth",
     description="Full Month tariff (no fees)",
     fees=0.0,
     date_range_type="full_month",
+    option_root="E.ATBM",
 )
 class FullMonth:
+
     def __init__(self, display_date: date) -> None:
+        meta = type(self).__registry_metadata__
+
         end_date = min(display_date - timedelta(days=1), date.today() - timedelta(days=1))
         start_date = date(end_date.year, end_date.month, 1)
 
@@ -26,7 +28,7 @@ class FullMonth:
         while business_days:
             on_date = business_days.pop(0)
             expiration_date = on_date - timedelta(days=1)
-            close_price = get_eex_close_price(OPTION_ROOT, on_date, expiration_date, display_date)
+            close_price = get_eex_close_price(meta.option_root, on_date, expiration_date, display_date)
             if not close_price:
                 print(f"No data for {on_date}, skipping")
                 continue
@@ -39,5 +41,5 @@ class FullMonth:
         self.status_message = f"Estimation based on all data ({len_prices}/{delta_days})"
 
         self.average_price = mean(price_values)
-        self.net_price = (self.average_price * STD_PROFILE_FACTOR + 0) / CONVERSION_FACTOR
+        self.net_price = (self.average_price * STD_PROFILE_FACTOR + meta.fees) / CONVERSION_FACTOR
         self.gross_price = self.net_price * TAXES
