@@ -30,6 +30,7 @@ class OekoFlow10:
         business_days = [d for d in all_days if d.weekday() < 5]
 
         prices = []
+        skipped_days = []
         while len(prices) < meta.days and business_days:
             on_date = business_days.pop(0)
             expiration_date = on_date - timedelta(days=1)
@@ -37,12 +38,13 @@ class OekoFlow10:
             close_price = get_eex_close_price(meta.option_root, on_date, expiration_date, display_date)
 
             if not close_price:
-                print(f"No data for {on_date}, skipping")
+                skipped_days.append(on_date)
                 continue
 
             prices.append((on_date, close_price))
 
         self.prices = prices
+        self.skipped_days = skipped_days
         price_values = [x[1] for x in self.prices]
 
         len_prices = len(price_values)

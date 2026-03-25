@@ -58,6 +58,7 @@ def main(
     DEFAULT_CACHE_DIR.mkdir(exist_ok=True)
 
     current_date = start_date
+    monthly_models = []
     display_model = {
         'prices': [],
         'average_prices': [],
@@ -67,6 +68,7 @@ def main(
     }
     while current_date <= end_date:
         calc_model = model_cls(current_date)
+        monthly_models.append(calc_model)
 
         display_model['prices'].extend(calc_model.prices)
         display_model['average_prices'].append(calc_model.average_price)
@@ -95,6 +97,17 @@ def main(
         price_table.add_row(str(price_date), f"{price_value:.2f}")
 
     console.print(price_table)
+
+    all_skipped = []
+    for m in monthly_models:
+        all_skipped.extend(m.skipped_days)
+    if all_skipped:
+        skipped_str = "\n".join(str(d) for d in sorted(all_skipped))
+        console.print(Panel.fit(
+            f"[yellow]{skipped_str}[/yellow]",
+            title="[bold yellow]⚠ Skipped Days (no data)[/bold yellow]",
+            border_style="yellow",
+        ))
 
     results_table = Table(show_header=False, box=None, padding=(0, 2))
     results_table.add_column("Label", style="white")
