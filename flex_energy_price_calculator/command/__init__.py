@@ -16,9 +16,9 @@ app = typer.Typer(help="Flexible Energy Price Calculator")
 
 @app.command()
 def main(
-    start: str = typer.Option(..., "--start", "-s", help="Start month (YYYY-MM)", show_default=False),
+    start: str = typer.Option(None, "--start", "-s", help="Start month (YYYY-MM)"),
     end: str = typer.Option(None, "--end", "-e", help="End month (YYYY-MM), defaults to start"),
-    model: str = typer.Option(..., "--model", "-m", help="Tariff model name"),
+    model: str = typer.Option(None, "--model", "-m", help="Tariff model name"),
     list_models_flag: bool = typer.Option(False, "--list", "-l", help="List available models"),
 ):
     if list_models_flag:
@@ -28,6 +28,9 @@ def main(
             if meta:
                 typer.echo(f"  {meta.name}: {meta.description} (fees: {meta.fees} €/month)")
         raise typer.Exit()
+
+    if not start or not model:
+        raise typer.BadParameter("Both --start and --model are required")
 
     model_cls = get_model(model)
     if not model_cls:
