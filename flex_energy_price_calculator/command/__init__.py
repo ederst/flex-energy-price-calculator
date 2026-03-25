@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 from dateutil.relativedelta import relativedelta
 
 import typer
@@ -8,6 +9,7 @@ from rich.table import Table
 
 from flex_energy_price_calculator.models.base import DEFAULT_CACHE_DIR
 from flex_energy_price_calculator.models.registry import get_model, get_metadata, list_models
+from flex_energy_price_calculator.report import generate_monthly_report, update_index
 
 import flex_energy_price_calculator.models.oekostrom  # noqa: F401
 import flex_energy_price_calculator.models.gogreenenergy  # noqa: F401
@@ -24,6 +26,8 @@ def main(
     end: str = typer.Option(None, "--end", "-e", help="End month (YYYY-MM), defaults to start"),
     model: str = typer.Option(None, "--model", "-m", help="Tariff model name"),
     list_models_flag: bool = typer.Option(False, "--list", "-l", help="List available models"),
+    format: str = typer.Option("terminal", "--format", "-f", help="Output format: terminal, markdown"),
+    output: Path = typer.Option(Path("docs"), "--output", "-o", help="Output directory for markdown"),
 ):
     if list_models_flag:
         console.print("\n[bold]Available tariff models:[/bold]\n")
@@ -33,6 +37,25 @@ def main(
                 console.print(f"  [cyan]{meta.name}[/cyan]  {meta.description}")
                 console.print(f"          fees: [yellow]{meta.fees} €/month[/yellow]")
         console.print()
+        raise typer.Exit()
+
+    if format == "markdown":
+        if not start:
+            start_date = date.today()
+        else:
+            start_date = date.fromisoformat(f"{start}-01")
+
+        console.print(f"\n[bold]Generating markdown report for[/bold] {start_date.strftime('%Y-%m')}\n")
+        output.mkdir(parents=True, exist_ok=True)
+
+        if model:
+            raise typer.BadParameter("--model is ignored when using --format markdown")
+        if end:
+            raise typer.BadParameter("--end is ignored when using --format markdown")
+
+        generate_monthly_report(start_date, output)
+        update_index(output)
+        console.print(f"[bold green]Report generated:[/bold green] {output}")
         raise typer.Exit()
 
     if not start or not model:
