@@ -2,6 +2,9 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 import typer
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 
 from flex_energy_price_calculator.models.base import DEFAULT_CACHE_DIR
 from flex_energy_price_calculator.models.registry import get_model, get_metadata, list_models
@@ -12,6 +15,7 @@ import flex_energy_price_calculator.models.noprovider  # noqa: F401
 import flex_energy_price_calculator.models.fullmonth  # noqa: F401
 
 app = typer.Typer(help="Flexible Energy Price Calculator")
+console = Console()
 
 
 @app.command()
@@ -22,11 +26,13 @@ def main(
     list_models_flag: bool = typer.Option(False, "--list", "-l", help="List available models"),
 ):
     if list_models_flag:
-        typer.echo("Available models:")
+        console.print("\n[bold]Available tariff models:[/bold]\n")
         for name in list_models():
             meta = get_metadata(name)
             if meta:
-                typer.echo(f"  {meta.name}: {meta.description} (fees: {meta.fees} €/month)")
+                console.print(f"  [cyan]{meta.name}[/cyan]  {meta.description}")
+                console.print(f"          fees: [yellow]{meta.fees} €/month[/yellow]")
+        console.print()
         raise typer.Exit()
 
     if not start or not model:
@@ -37,13 +43,17 @@ def main(
         available = ", ".join(list_models())
         raise typer.BadParameter(f"Unknown model: {model}\nAvailable models: {available}")
 
+    meta = get_metadata(model)
+    if not meta:
+        raise typer.BadParameter(f"Could not retrieve metadata for model: {model}")
+
     start_date = date.fromisoformat(f"{start}-01")
     if end:
         end_date = date.fromisoformat(f"{end}-01")
     else:
         end_date = start_date
 
-    typer.echo(f"Calculating prices for {start} to {end or start}\n---")
+    console.print(f"\n[bold]Calculating prices for[/bold] {start} [bold]to[/bold] {end or start}\n")
 
     DEFAULT_CACHE_DIR.mkdir(exist_ok=True)
 
@@ -69,17 +79,37 @@ def main(
     net_price = sum(display_model['net_prices']) / len(display_model['net_prices'])
     gross_price = sum(display_model['gross_prices']) / len(display_model['gross_prices'])
 
-    prices_string = "".join([f"\n  - {x[0]}: {x[1]}" for x in display_model['prices']])
+    console.print(Panel.fit(
+        f"[bold cyan]Model:[/bold cyan] {meta.name}\n"
+        f"[bold cyan]Description:[/bold cyan] {meta.description}\n"
+        f"[bold cyan]Fees:[/bold cyan] {meta.fees} €/month",
+        title="[bold]Tariff Info[/bold]",
+        border_style="cyan",
+    ))
 
-    typer.echo(
-        (
-            f"stock prices: {prices_string}\n"
-            f"avg stock price: {average_price:5.2f}€/MWh\n"
-            "---\n"
-            f"net enduser price:   {net_price:5.2f}ct/KWh\n"
-            f"gross enduser price: {gross_price:5.2f}ct/KWh\n"
-        )
-    )
+    price_table = Table(title="\n[bold]Stock Prices[/bold]", show_header=True, header_style="bold magenta")
+    price_table.add_column("Date", style="white", justify="left")
+    price_table.add_column("Price (€/MWh)", style="yellow", justify="right")
+
+    for price_date, price_value in display_model['prices']:
+        price_table.add_row(str(price_date), f"{price_value:.2f}")
+
+    console.print(price_table)
+
+    results_table = Table(show_header=False, box=None, padding=(0, 2))
+    results_table.add_column("Label", style="white")
+    results_table.add_column("Value", style="bold green", justify="right")
+
+    results_table.add_row("[bold]Avg Stock Price[/bold]", f"{average_price:.2f} €/MWh")
+    results_table.add_row("[bold]Net Enduser Price[/bold]", f"{net_price:.2f} ct/kWh")
+    results_table.add_row("[bold]Gross Enduser Price[/bold]", f"{gross_price:.2f} ct/kWh")
+
+    console.print(Panel.fit(
+        results_table,
+        title="[bold]Results[/bold]",
+        border_style="green",
+    ))
+    console.print()
 
 
 if __name__ == "__main__":
