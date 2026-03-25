@@ -1,7 +1,6 @@
 from datetime import date, timedelta
-from statistics import mean
 
-from ..base import CONVERSION_FACTOR, STD_PROFILE_FACTOR, TAXES, get_eex_close_price
+from ..base import BaseModel
 from ..registry import register
 
 
@@ -13,46 +12,18 @@ from ..registry import register
     option_root="E.ATBM",
     days=10,
 )
-class OekoFlow10:
+class OekoFlow10(BaseModel):
 
-    def __init__(self, display_date: date) -> None:
-        meta = type(self).__registry_metadata__
-
-        end_date = min(
-            display_date - timedelta(days=1),
-            date.today() - timedelta(days=1),
-        )
+    def calculate_date_range(self, display_date: date):
+        end_date = min(display_date - timedelta(days=1), date.today() - timedelta(days=1))
         start_date = date(end_date.year, end_date.month, 1)
+        return start_date, end_date
 
-        delta_days = (end_date - start_date).days
-        all_days = [start_date + timedelta(days=x) for x in range(delta_days + 1)]
+    def should_continue_loop(self, prices, business_days, meta):
+        return len(prices) < meta.days
 
-        business_days = [d for d in all_days if d.weekday() < 5]
-
-        prices = []
-        skipped_days = []
-        while len(prices) < meta.days and business_days:
-            on_date = business_days.pop(0)
-            expiration_date = on_date - timedelta(days=1)
-
-            close_price = get_eex_close_price(meta.option_root, on_date, expiration_date, display_date)
-
-            if not close_price:
-                skipped_days.append(on_date)
-                continue
-
-            prices.append((on_date, close_price))
-
-        self.prices = prices
-        self.skipped_days = skipped_days
-        price_values = [x[1] for x in self.prices]
-
-        len_prices = len(price_values)
+    def get_status_message(self, len_prices, delta_days):
+        meta = type(self).__registry_metadata__
         if len_prices == meta.days:
-            self.status_message = f"Estimation based on all data ({len_prices}/{meta.days})"
-        else:
-            self.status_message = f"Estimation based on missing data ({len_prices}/{meta.days})"
-
-        self.average_price = mean(price_values)
-        self.net_price = (self.average_price * STD_PROFILE_FACTOR + meta.fees) / CONVERSION_FACTOR
-        self.gross_price = self.net_price * TAXES
+            return f"Estimation based on all data ({len_prices}/{meta.days})"
+        return f"Estimation based on missing data ({len_prices}/{meta.days})"
