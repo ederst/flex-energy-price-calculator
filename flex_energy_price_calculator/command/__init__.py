@@ -46,6 +46,7 @@ def main(
 
         console.print(f"\n[bold]Generating markdown report for[/bold] {start_date.strftime('%Y-%m')}\n")
         output.mkdir(parents=True, exist_ok=True)
+        DEFAULT_CACHE_DIR.mkdir(exist_ok=True)
 
         if model:
             raise typer.BadParameter("--model is ignored when using --format markdown")
