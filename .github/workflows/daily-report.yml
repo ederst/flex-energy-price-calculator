@@ -11,6 +11,9 @@ jobs:
     concurrency:
       group: daily-report
       cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,8 +36,10 @@ jobs:
           EEX_API_HEADER_KEY: ${{ secrets.EEX_API_HEADER_KEY }}
         run: poetry run flep --format markdown --output docs
 
+      - name: Delete existing EEX API cache
+        run: gh cache delete eex-cache-v1 || true
+
       - name: Save EEX API cache
-        if: always()
         uses: actions/cache/save@v5
         with:
           path: .cache/
