@@ -19,6 +19,9 @@ jobs:
         run: poetry install
 
       - name: Generate report
+        env:
+          EEX_API_HEADER_VALUE: ${{ secrets.EEX_API_HEADER_VALUE }}
+          EEX_API_HEADER_KEY: ${{ secrets.EEX_API_HEADER_KEY }}
         run: poetry run flep --format markdown --output docs
 
       - name: Setup Git
