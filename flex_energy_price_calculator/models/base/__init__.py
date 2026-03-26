@@ -1,7 +1,9 @@
 import json
 import os
+import time
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
+from functools import wraps
 from pathlib import Path
 from statistics import mean
 from typing import Any, Dict, List, Tuple
@@ -13,11 +15,34 @@ CONVERSION_FACTOR = 10
 STD_PROFILE_FACTOR = 1.1
 TAXES = 1.2
 
-# TODO(sprietl): maybe parameterise the chain (gv.*, close)
 DEFAULT_URL = "https://webservice-eex.gvsi.com/query/json/getChain/gv.pricesymbol/gv.displaydate/close/"
 DEFAULT_CACHE_DIR = Path.cwd() / ".cache"
 
 
+def retry_on_auth_failure(max_retries: int = 3, initial_delay: float = 1.0):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            delay = initial_delay
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except requests.HTTPError as e:
+                    if e.response is not None and e.response.status_code == 401:
+                        if attempt < max_retries - 1:
+                            time.sleep(delay)
+                            delay *= 2
+                        else:
+                            raise
+                    else:
+                        raise
+
+        return wrapper
+
+    return decorator
+
+
+@retry_on_auth_failure()
 def get_eex_prices(option_root: str, on_date: date, expiration_date: date) -> Dict[str, Any]:
     # Note(sprietl): For E.ATBM/ATPM we need these params:
     #   optionroot: "/E.ATBM"
