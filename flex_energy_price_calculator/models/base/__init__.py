@@ -15,7 +15,6 @@ TAXES = 1.2
 
 # TODO(sprietl): maybe parameterise the chain (gv.*, close)
 DEFAULT_URL = "https://webservice-eex.gvsi.com/query/json/getChain/gv.pricesymbol/gv.displaydate/close/"
-DEFAULT_HEADERS = {os.getenv("EEX_API_HEADER_KEY"): os.getenv("EEX_API_HEADER_VALUE")}
 DEFAULT_CACHE_DIR = Path.cwd() / ".cache"
 
 
@@ -36,7 +35,8 @@ def get_eex_prices(option_root: str, on_date: date, expiration_date: date) -> Di
         with open(cache_file, 'r') as f:
             return json.load(f)
 
-    response = requests.get(DEFAULT_URL, params=params, headers=DEFAULT_HEADERS)
+    headers = {os.getenv("EEX_API_HEADER_KEY"): os.getenv("EEX_API_HEADER_VALUE")}
+    response = requests.get(DEFAULT_URL, params=params, headers=headers)
     response.raise_for_status()
 
     prices = response.json()
