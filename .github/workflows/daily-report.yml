@@ -44,7 +44,10 @@ jobs:
         run: poetry run flep --format markdown --output report/
 
       - name: Delete existing EEX API cache
-        run: gh cache delete eex-cache-v1 || true
+        run: |
+          gh cache delete eex-cache-v1 || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Save EEX API cache
         uses: actions/cache/save@v5
