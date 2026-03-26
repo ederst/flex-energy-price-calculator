@@ -12,7 +12,7 @@ jobs:
       group: daily-report
       cancel-in-progress: false
     permissions:
-      contents: read
+      contents: write
       actions: write
     steps:
       - name: Checkout
@@ -30,11 +30,18 @@ jobs:
           path: .cache/
           key: eex-cache-v1
 
+      - name: Checkout gh-pages
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: report
+          fetch-depth: 0
+
       - name: Generate report
         env:
           EEX_API_HEADER_VALUE: ${{ secrets.EEX_API_HEADER_VALUE }}
           EEX_API_HEADER_KEY: ${{ secrets.EEX_API_HEADER_KEY }}
-        run: poetry run flep --format markdown --output docs
+        run: poetry run flep --format markdown --output report/
 
       - name: Delete existing EEX API cache
         run: gh cache delete eex-cache-v1 || true
@@ -45,15 +52,11 @@ jobs:
           path: .cache/
           key: eex-cache-v1
 
-      - name: Setup Git
+      - name: Commit and push to gh-pages
+        working-directory: report
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-
-      - name: Commit and push
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "docs: update daily energy price report"
-          file_pattern: docs/*.md docs/**/*.md
-          branch: gh-pages
-          commit_options: "--allow-empty"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add .
+          git diff --cached --quiet || git commit -m "docs: update daily energy price report"
+          git push origin gh-pages
