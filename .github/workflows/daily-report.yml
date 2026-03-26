@@ -16,7 +16,7 @@ jobs:
       actions: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -51,7 +51,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
 
       - name: Commit and push
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: update daily energy price report"
           file_pattern: docs/*.md docs/**/*.md
