@@ -1,3 +1,4 @@
+import os
 from datetime import date
 from pathlib import Path
 from dateutil.relativedelta import relativedelta
@@ -40,12 +41,18 @@ def main(
 
     if format == "markdown":
         if not start:
-            start_date = date.today()
+            start_date = date.today().replace(day=1) + relativedelta(months=1)
         else:
             start_date = date.fromisoformat(f"{start}-01")
 
         console.print(f"\n[bold]Generating markdown report for[/bold] {start_date.strftime('%Y-%m')}\n")
         output.mkdir(parents=True, exist_ok=True)
+        DEFAULT_CACHE_DIR.mkdir(exist_ok=True)
+
+        api_key = os.getenv("EEX_API_HEADER_KEY")
+        api_value = os.getenv("EEX_API_HEADER_VALUE")
+        if not api_key or not api_value:
+            raise typer.BadParameter("EEX_API_HEADER_KEY and EEX_API_HEADER_VALUE environment variables must be set")
 
         if model:
             raise typer.BadParameter("--model is ignored when using --format markdown")

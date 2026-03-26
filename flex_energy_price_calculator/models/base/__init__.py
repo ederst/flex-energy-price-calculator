@@ -1,24 +1,51 @@
 import json
+import logging
 import os
+import time
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
+from functools import wraps
 from pathlib import Path
 from statistics import mean
 from typing import Any, Dict, List, Tuple
 
 import requests
 
+logger = logging.getLogger(__name__)
+
 QUERY_DATE_FORMAT = "%Y/%m/%d"
 CONVERSION_FACTOR = 10
 STD_PROFILE_FACTOR = 1.1
 TAXES = 1.2
 
-# TODO(sprietl): maybe parameterise the chain (gv.*, close)
 DEFAULT_URL = "https://webservice-eex.gvsi.com/query/json/getChain/gv.pricesymbol/gv.displaydate/close/"
-DEFAULT_HEADERS = {os.getenv("EEX_API_HEADER_KEY"): os.getenv("EEX_API_HEADER_VALUE")}
 DEFAULT_CACHE_DIR = Path.cwd() / ".cache"
 
 
+def retry_on_auth_failure(max_retries: int = 3, initial_delay: float = 1.0):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            delay = initial_delay
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except requests.HTTPError as e:
+                    if e.response is not None and e.response.status_code == 401:
+                        if attempt < max_retries - 1:
+                            time.sleep(delay)
+                            delay *= 2
+                        else:
+                            raise
+                    else:
+                        raise
+
+        return wrapper
+
+    return decorator
+
+
+@retry_on_auth_failure()
 def get_eex_prices(option_root: str, on_date: date, expiration_date: date) -> Dict[str, Any]:
     # Note(sprietl): For E.ATBM/ATPM we need these params:
     #   optionroot: "/E.ATBM"
@@ -36,8 +63,18 @@ def get_eex_prices(option_root: str, on_date: date, expiration_date: date) -> Di
         with open(cache_file, 'r') as f:
             return json.load(f)
 
-    response = requests.get(DEFAULT_URL, params=params, headers=DEFAULT_HEADERS)
-    response.raise_for_status()
+    headers = {os.getenv("EEX_API_HEADER_KEY"): os.getenv("EEX_API_HEADER_VALUE")}
+    logger.debug(
+        f"Requesting EEX prices: option_root={option_root}, on_date={on_date}, expiration_date={expiration_date}"
+    )
+    try:
+        response = requests.get(DEFAULT_URL, params=params, headers=headers)
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        status = e.response.status_code if e.response else "unknown"
+        text = e.response.text[:200] if e.response else "no response"
+        logger.error(f"EEX API request failed: {status} - {text}")
+        raise
 
     prices = response.json()
 
