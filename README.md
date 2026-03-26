@@ -25,7 +25,20 @@ poetry install
 Create `.envrc-secrets` and find out which headers you have to set for yourselves.
 
 ```shell
-poetry run flep <YYYY-MM> <model>
+# Calculate for single month
+poetry run flep --start 2024-03 --model oekoflow1.0
+poetry run flep -s 2024-03 -m oekoflow1.0
+
+# Calculate for date range
+poetry run flep --start 2024-01 --end 2024-03 --model gogreenenergyflex
+poetry run flep -s 2024-01 -e 2024-03 -m gogreenenergyflex
+
+# List available models
+poetry run flep --list
+poetry run flep -l
+
+# Show help
+poetry run flep --help
 ```
 
 Currently the following models are supported:
@@ -33,3 +46,4 @@ Currently the following models are supported:
 * oekoflow1.0
 * gogreenenergyflex
 * gogreenenergyflexfuture
+* fullmonth

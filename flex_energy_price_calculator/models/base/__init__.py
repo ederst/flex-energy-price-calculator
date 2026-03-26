@@ -1,8 +1,10 @@
 import json
 import os
-from datetime import date
+from abc import ABC, abstractmethod
+from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Dict
+from statistics import mean
+from typing import Any, Dict, List, Tuple
 
 import requests
 
@@ -73,3 +75,49 @@ def get_eex_close_price(option_root: str, on_date: date, expiration_date: date, 
     #     delete_cache_file(option_root, on_date, expiration_date)
 
     return close_price
+
+
+class BaseModel(ABC):
+    @abstractmethod
+    def calculate_date_range(self, display_date: date) -> Tuple[date, date]:
+        """Return (start_date, end_date) for the calculation window."""
+        pass
+
+    def should_continue_loop(self, prices: List, business_days: List, meta: Any) -> bool:
+        """Return True if loop should continue. Override for models with day limits."""
+        return True
+
+    def get_status_message(self, len_prices: int, delta_days: int) -> str:
+        """Format status message. Override for custom formats."""
+        return f"Estimation based on all data ({len_prices}/{delta_days})"
+
+    def __init__(self, display_date: date) -> None:
+        meta = type(self).__registry_metadata__
+
+        start_date, end_date = self.calculate_date_range(display_date)
+
+        delta_days = (end_date - start_date).days
+        all_days = [start_date + timedelta(days=x) for x in range(delta_days + 1)]
+        business_days = [d for d in all_days if d.weekday() < 5]
+
+        prices = []
+        skipped_days = []
+        while self.should_continue_loop(prices, business_days, meta) and business_days:
+            on_date = business_days.pop(0)
+            expiration_date = on_date - timedelta(days=1)
+            close_price = get_eex_close_price(meta.option_root, on_date, expiration_date, display_date)
+
+            if not close_price:
+                skipped_days.append(on_date)
+                continue
+
+            prices.append((on_date, close_price))
+
+        self.prices = prices
+        self.skipped_days = skipped_days
+        price_values = [x[1] for x in self.prices]
+
+        self.status_message = self.get_status_message(len(price_values), delta_days)
+        self.average_price = mean(price_values)
+        self.net_price = (self.average_price * STD_PROFILE_FACTOR + meta.fees) / CONVERSION_FACTOR
+        self.gross_price = self.net_price * TAXES
