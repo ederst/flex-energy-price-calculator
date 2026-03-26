@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import time
 from abc import ABC, abstractmethod
@@ -9,6 +10,8 @@ from statistics import mean
 from typing import Any, Dict, List, Tuple
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 QUERY_DATE_FORMAT = "%Y/%m/%d"
 CONVERSION_FACTOR = 10
@@ -61,8 +64,17 @@ def get_eex_prices(option_root: str, on_date: date, expiration_date: date) -> Di
             return json.load(f)
 
     headers = {os.getenv("EEX_API_HEADER_KEY"): os.getenv("EEX_API_HEADER_VALUE")}
-    response = requests.get(DEFAULT_URL, params=params, headers=headers)
-    response.raise_for_status()
+    logger.debug(
+        f"Requesting EEX prices: option_root={option_root}, on_date={on_date}, expiration_date={expiration_date}"
+    )
+    try:
+        response = requests.get(DEFAULT_URL, params=params, headers=headers)
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        status = e.response.status_code if e.response else "unknown"
+        text = e.response.text[:200] if e.response else "no response"
+        logger.error(f"EEX API request failed: {status} - {text}")
+        raise
 
     prices = response.json()
 
