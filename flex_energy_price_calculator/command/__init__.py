@@ -13,7 +13,6 @@ from flex_energy_price_calculator.report import generate_monthly_report, update_
 
 import flex_energy_price_calculator.models.oekostrom  # noqa: F401
 import flex_energy_price_calculator.models.gogreenenergy  # noqa: F401
-import flex_energy_price_calculator.models.noprovider  # noqa: F401
 import flex_energy_price_calculator.models.fullmonth  # noqa: F401
 
 app = typer.Typer(help="Flexible Energy Price Calculator")
