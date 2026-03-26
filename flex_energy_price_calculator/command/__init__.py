@@ -40,7 +40,7 @@ def main(
 
     if format == "markdown":
         if not start:
-            start_date = date.today()
+            start_date = date.today().replace(day=1) + relativedelta(months=1)
         else:
             start_date = date.fromisoformat(f"{start}-01")
 
