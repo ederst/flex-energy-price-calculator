@@ -6,4 +6,5 @@ This page is automatically updated daily.
 
 ### 2026
 
+- [Energy Price Report: May 2026](2026/05.md)
 - [Energy Price Report: April 2026](2026/04.md)
