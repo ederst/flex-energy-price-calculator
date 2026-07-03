@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
+    inputs:
+      month:
+        description: 'Month (1-12), omit for cron default (next month)'
+        required: false
+        type: number
+      year:
+        description: 'Year YYYY, defaults to current year'
+        required: false
+        type: number
 
 jobs:
   generate-report:
@@ -41,7 +50,14 @@ jobs:
         env:
           EEX_API_HEADER_VALUE: ${{ secrets.EEX_API_HEADER_VALUE }}
           EEX_API_HEADER_KEY: ${{ secrets.EEX_API_HEADER_KEY }}
-        run: poetry run flep --format markdown --output report/
+        run: |
+          ARGS="--format markdown --output report/"
+          if [ -n "${{ inputs.month }}" ]; then
+            YR="${{ inputs.year }}"
+            [ -z "$YR" ] && YR=$(date +%Y)
+            ARGS="$ARGS --start $(printf '%04d-%02d' $YR ${{ inputs.month }})"
+          fi
+          poetry run flep $ARGS
 
       - name: Delete existing EEX API cache
         run: |
