@@ -150,7 +150,13 @@ class BaseModel(ABC):
         self.skipped_days = skipped_days
         price_values = [x[1] for x in self.prices]
 
-        self.status_message = self.get_status_message(len(price_values), delta_days)
-        self.average_price = mean(price_values)
-        self.net_price = (self.average_price * STD_PROFILE_FACTOR + meta.fees) / CONVERSION_FACTOR
-        self.gross_price = self.net_price * TAXES
+        if not price_values:
+            self.average_price = 0.0
+            self.net_price = 0.0
+            self.gross_price = 0.0
+            self.status_message = "No data available"
+        else:
+            self.status_message = self.get_status_message(len(price_values), delta_days)
+            self.average_price = mean(price_values)
+            self.net_price = (self.average_price * STD_PROFILE_FACTOR + meta.fees) / CONVERSION_FACTOR
+            self.gross_price = self.net_price * TAXES
