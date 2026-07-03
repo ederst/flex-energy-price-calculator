@@ -13,13 +13,16 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-QUERY_DATE_FORMAT = "%Y/%m/%d"
 CONVERSION_FACTOR = 10
 STD_PROFILE_FACTOR = 1.1
 TAXES = 1.2
 
-DEFAULT_URL = "https://webservice-eex.gvsi.com/query/json/getChain/gv.pricesymbol/gv.displaydate/close/"
+DEFAULT_URL = "https://api.eex-group.com/pub/market-data/chart/eod"
 DEFAULT_CACHE_DIR = Path.cwd() / ".cache"
+
+_OPTION_ROOT_PARAMS: dict[str, tuple[str, str, str, str, str]] = {
+    'E.ATBM': ('ATBM', 'POWER', 'Future', 'AT', 'Base'),
+}
 
 
 def retry_on_auth_failure(max_retries: int = 3, initial_delay: float = 1.0):
@@ -31,7 +34,7 @@ def retry_on_auth_failure(max_retries: int = 3, initial_delay: float = 1.0):
                 try:
                     return func(*args, **kwargs)
                 except requests.HTTPError as e:
-                    if e.response is not None and e.response.status_code == 401:
+                    if e.response is not None and e.response.status_code in (401, 403):
                         if attempt < max_retries - 1:
                             time.sleep(delay)
                             delay *= 2
@@ -46,18 +49,23 @@ def retry_on_auth_failure(max_retries: int = 3, initial_delay: float = 1.0):
 
 
 @retry_on_auth_failure()
-def get_eex_prices(option_root: str, on_date: date, expiration_date: date) -> Dict[str, Any]:
-    # Note(sprietl): For E.ATBM/ATPM we need these params:
-    #   optionroot: "/E.ATBM"
-    #   onDate: 2024/04/12
-    #   expirationdate: 2024/04/11 (onDate - 1)
-    params = {
-        'optionroot': f"\"/{option_root}\"",
-    }
-    params['onDate'] = on_date.strftime(QUERY_DATE_FORMAT)
-    params['expirationdate'] = expiration_date.strftime(QUERY_DATE_FORMAT)
+def get_eex_prices(option_root: str, display_date: date, start_date: date, end_date: date) -> Dict[str, Any]:
+    short_code, commodity, pricing, area, product = _OPTION_ROOT_PARAMS[option_root]
+    maturity = display_date.strftime('%Y%m')
 
-    cache_file = Path(DEFAULT_CACHE_DIR) / f"{option_root}_{on_date.isoformat()}_{expiration_date.isoformat()}.json"
+    params = {
+        'shortCode': short_code,
+        'commodity': commodity,
+        'pricing': pricing,
+        'area': area,
+        'product': product,
+        'maturity': maturity,
+        'startDate': start_date.isoformat(),
+        'endDate': end_date.isoformat(),
+    }
+
+    cache_key = f"{option_root}_{maturity}_{start_date.isoformat()}_{end_date.isoformat()}.json"
+    cache_file = Path(DEFAULT_CACHE_DIR) / cache_key
 
     if cache_file.exists():
         with open(cache_file, 'r') as f:
@@ -65,7 +73,7 @@ def get_eex_prices(option_root: str, on_date: date, expiration_date: date) -> Di
 
     headers = {os.getenv("EEX_API_HEADER_KEY"): os.getenv("EEX_API_HEADER_VALUE")}
     logger.debug(
-        f"Requesting EEX prices: option_root={option_root}, on_date={on_date}, expiration_date={expiration_date}"
+        f"Requesting EEX chart data: shortCode={short_code}, maturity={maturity}, start={start_date}, end={end_date}"
     )
     try:
         response = requests.get(DEFAULT_URL, params=params, headers=headers)
@@ -78,40 +86,27 @@ def get_eex_prices(option_root: str, on_date: date, expiration_date: date) -> Di
 
     prices = response.json()
 
-    # if prices['results']['items']:
     with open(cache_file, 'w') as f:
         f.write(response.text)
 
     return prices
 
 
-def delete_cache_file(option_root: str, on_date: date, expiration_date: date) -> None:
-    cache_file = Path(DEFAULT_CACHE_DIR) / f"{option_root}_{on_date.isoformat()}_{expiration_date.isoformat()}.json"
+def delete_cache_file(option_root: str, display_date: date, start_date: date, end_date: date) -> None:
+    maturity = display_date.strftime('%Y%m')
+    cache_key = f"{option_root}_{maturity}_{start_date.isoformat()}_{end_date.isoformat()}.json"
+    cache_file = Path(DEFAULT_CACHE_DIR) / cache_key
     cache_file.unlink(missing_ok=True)
 
 
-def _first_close_price(display_date: date, prices: Dict[str, Any]) -> str:
-    display_date_str = display_date.strftime("%-m/%-d/%Y")
-    for item in prices['results']['items']:
-        if display_date_str != item['gv.displaydate']:
-            continue
-
-        return item['close']
-
+def _first_close_price(on_date: date, prices: Dict[str, Any]) -> float | None:
+    on_date_str = on_date.isoformat()
+    for series in prices.get('series', []):
+        if series.get('serieName') == 'settlPx':
+            for date_str, price in series.get('timeAndValue', []):
+                if date_str == on_date_str:
+                    return price
     return None
-
-
-def get_eex_close_price(option_root: str, on_date: date, expiration_date: date, display_date: date) -> str:
-
-    prices = get_eex_prices(option_root, on_date, expiration_date)
-
-    close_price = _first_close_price(display_date, prices)
-
-    # if not close_price:
-    #     # no data, we need no cache
-    #     delete_cache_file(option_root, on_date, expiration_date)
-
-    return close_price
 
 
 class BaseModel(ABC):
@@ -137,12 +132,13 @@ class BaseModel(ABC):
         all_days = [start_date + timedelta(days=x) for x in range(delta_days + 1)]
         business_days = [d for d in all_days if d.weekday() < 5]
 
+        raw_prices = get_eex_prices(meta.option_root, display_date, start_date, end_date)
+
         prices = []
         skipped_days = []
         while self.should_continue_loop(prices, business_days, meta) and business_days:
             on_date = business_days.pop(0)
-            expiration_date = on_date - timedelta(days=1)
-            close_price = get_eex_close_price(meta.option_root, on_date, expiration_date, display_date)
+            close_price = _first_close_price(on_date, raw_prices)
 
             if not close_price:
                 skipped_days.append(on_date)
