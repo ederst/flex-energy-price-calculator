@@ -6,6 +6,7 @@ This page is automatically updated daily.
 
 ### 2026
 
+- [Energy Price Report: September 2026](2026/09.md)
 - [Energy Price Report: August 2026](2026/08.md)
 - [Energy Price Report: July 2026](2026/07.md)
 - [Energy Price Report: June 2026](2026/06.md)
